@@ -709,9 +709,24 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer>
-        <div className="footer-logo">RAILGUARDX</div>
-        <div className="footer-copy">
-          © 2025 RailGuardX. Behavioral guardrails for autonomous AI.
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', width: '100%' }}>
+          <div className="footer-logo">RAILGUARDX © 2026</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+            <div className="footer-copy">
+              © 2026 Alternic LLC. All rights reserved.
+            </div>
+            <a
+              href="mailto:railguardxhq@gmail.com"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: '11px',
+                color: '#666',
+                textDecoration: 'none',
+              }}
+            >
+              railguardxhq@gmail.com
+            </a>
+          </div>
         </div>
       </footer>
     </div>
