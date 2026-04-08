@@ -37,12 +37,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // /register always redirects to landing page
+  if (request.nextUrl.pathname === '/register') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
   // Redirect authenticated users away from auth pages and landing page
-  const authPaths = ['/login', '/register']
-  const isAuthPage = authPaths.some(path => request.nextUrl.pathname === path)
+  const isLoginPage = request.nextUrl.pathname === '/login'
   const isRoot = request.nextUrl.pathname === '/'
 
-  if ((isAuthPage || isRoot) && user) {
+  if ((isLoginPage || isRoot) && user) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

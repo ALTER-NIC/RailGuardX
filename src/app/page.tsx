@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import './landing.css';
 
 const LOOPS_ENDPOINT = 'https://app.loops.so/api/newsletter-form/cmn3tos2006xo0i1em866kgxu';
@@ -55,6 +54,7 @@ export default function LandingPage() {
   const [showSurvey, setShowSurvey] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
   const [ctaSuccess, setCtaSuccess] = useState(false);
+  const [surveyDone, setSurveyDone] = useState(false);
   const surveyPanelRef = useRef<HTMLDivElement>(null);
   const freeTextRef = useRef<HTMLTextAreaElement>(null);
 
@@ -170,8 +170,7 @@ export default function LandingPage() {
       // silent fail
     }
 
-    setShowSurvey(false);
-    setCtaSuccess(false);
+    setSurveyDone(true);
   };
 
   const renderSurveyStep = () => {
@@ -248,14 +247,7 @@ export default function LandingPage() {
             </span>
           </div>
         </div>
-        <div className="nav-links">
-          <Link href="/login" className="nav-signin">
-            Sign In
-          </Link>
-          <a href="#waitlist" className="nav-cta">
-            Get Early Access
-          </a>
-        </div>
+
       </nav>
 
       {/* HERO */}
@@ -270,7 +262,40 @@ export default function LandingPage() {
           a production disaster.
         </p>
 
-        {!showSurvey ? (
+        {surveyDone ? (
+          <div
+            style={{
+              maxWidth: '520px',
+              background: 'rgba(13,13,18,0.95)',
+              border: '1px solid var(--border)',
+              padding: '48px 32px',
+              textAlign: 'center',
+              animation: 'fadeInUp 0.4s ease both',
+            }}
+          >
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔒</div>
+            <p
+              style={{
+                color: 'var(--white)',
+                fontWeight: 700,
+                fontSize: '20px',
+                marginBottom: '12px',
+              }}
+            >
+              You&apos;re on the list.
+            </p>
+            <p
+              style={{
+                color: '#888',
+                fontSize: '14px',
+                lineHeight: '1.6',
+              }}
+            >
+              Thanks for answering — this directly shapes what we build.
+              We&apos;ll be in touch soon.
+            </p>
+          </div>
+        ) : !showSurvey ? (
           <>
             <form className="email-form" onSubmit={handleHeroSubmit}>
               <input
@@ -279,7 +304,7 @@ export default function LandingPage() {
                 required
                 aria-label="Email address"
               />
-              <button type="submit">GET EARLY ACCESS</button>
+              <button type="submit">Join the Waitlist →</button>
             </form>
             <p className="form-note">
               Join the waitlist — launching Q3 2025
@@ -655,12 +680,12 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section className="cta-section" id="cta">
-        <h2>
-          STOP HOPING
+        <h2 style={{ color: 'var(--white)' }}>
+          YOUR AI.
           <br />
-          YOUR AGENTS
+          <span style={{ color: 'var(--red)' }}>ON A LEASH.</span>
           <br />
-          BEHAVE
+          FINALLY.
         </h2>
         <p>
           Join the teams building AI agents the right way — with behavioral
@@ -674,7 +699,7 @@ export default function LandingPage() {
               required
               aria-label="Email address"
             />
-            <button type="submit">JOIN WAITLIST</button>
+            <button type="submit">JOIN THE WAITLIST</button>
           </form>
         ) : null}
         <div className={`success-msg${ctaSuccess ? ' show' : ''}`}>
