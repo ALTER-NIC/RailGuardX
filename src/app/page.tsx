@@ -307,7 +307,7 @@ export default function LandingPage() {
               <button type="submit">Join the Waitlist →</button>
             </form>
             <p className="form-note">
-              Join the waitlist — launching Q3 2025
+              Join the waitlist
             </p>
           </>
         ) : (
