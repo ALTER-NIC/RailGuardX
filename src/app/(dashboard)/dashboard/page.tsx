@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { v4 as uuidv4 } from 'uuid'
-import CopyButton from '@/components/CopyButton'
+import ApiKeyDisplay from '@/components/ApiKeyDisplay'
 
 export default async function DashboardPage() {
   const supabase = createServerSupabaseClient()
@@ -92,12 +92,7 @@ if (!allowed) throw new Error(\`Blocked: \${reason}\`);`
           <label className="block text-xs text-brand-grey uppercase tracking-wider mb-2">
             API Key
           </label>
-          <div className="flex items-center gap-3 bg-brand-bg border border-brand-border rounded px-4 py-3">
-            <code className="flex-1 text-sm text-brand-white font-mono break-all">
-              {project.api_key}
-            </code>
-            <CopyButton text={project.api_key} />
-          </div>
+          <ApiKeyDisplay apiKey={project.api_key} />
         </div>
       </div>
 
