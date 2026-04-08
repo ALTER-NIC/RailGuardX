@@ -1,79 +1,239 @@
-'use client'
+'use client';
 
-import { useEffect, useRef, FormEvent } from 'react'
-import Link from 'next/link'
-import './landing.css'
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import './landing.css';
 
-const LOOPS_ENDPOINT = 'https://app.loops.so/api/newsletter-form/cmn3tos2006xo0i1em866kgxu'
+const LOOPS_ENDPOINT = 'https://app.loops.so/api/newsletter-form/cmn3tos2006xo0i1em866kgxu';
 
-export default function HomePage() {
-  const heroSuccessRef = useRef<HTMLParagraphElement>(null)
-  const ctaSuccessRef = useRef<HTMLParagraphElement>(null)
-  const heroFormRef = useRef<HTMLFormElement>(null)
-  const ctaFormRef = useRef<HTMLFormElement>(null)
+const surveyQuestions = [
+  {
+    question: 'What brought you here?',
+    options: [
+      'I\'m building AI agents and worried about safety',
+      'My company needs compliance guardrails',
+      'I saw an AI incident in the news',
+      'Just exploring — curious about AI safety',
+    ],
+  },
+  {
+    question: 'What do you want most from a guardrail tool?',
+    options: [
+      'Block dangerous actions before they happen',
+      'Audit trail for compliance',
+      'Real-time monitoring and alerts',
+      'Easy integration with existing agents',
+    ],
+  },
+  {
+    question: 'What would you pay for peace of mind?',
+    options: [
+      'Free tier is enough for now',
+      '$49/mo for core protection',
+      '$199/mo for enterprise features',
+      'Custom pricing for my scale',
+    ],
+  },
+  {
+    question: 'How soon do you need this?',
+    options: [
+      'Yesterday — we already had an incident',
+      'This quarter — we\'re planning ahead',
+      'Exploring for future projects',
+      'Just want to stay informed',
+    ],
+  },
+  {
+    question: 'Anything else we should know? (optional)',
+    freeText: true,
+  },
+];
+
+export default function LandingPage() {
+  const [surveyAnswers, setSurveyAnswers] = useState<Record<number, string>>({});
+  const [currentStep, setCurrentStep] = useState(0);
+  const [showSurvey, setShowSurvey] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  const [ctaSuccess, setCtaSuccess] = useState(false);
+  const surveyPanelRef = useRef<HTMLDivElement>(null);
+  const freeTextRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    // Scroll reveal
-    const reveals = document.querySelectorAll('.reveal')
+    const reveals = document.querySelectorAll('.reveal');
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry, i) => {
+        entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setTimeout(() => entry.target.classList.add('visible'), i * 80)
+            entry.target.classList.add('visible');
           }
-        })
+        });
       },
       { threshold: 0.1 }
-    )
-    reveals.forEach((el) => observer.observe(el))
+    );
+    reveals.forEach((el) => observer.observe(el));
 
-    // Animate score bars on scroll
+    const scoreBars = document.querySelectorAll('.score-bar');
     const scoreObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.querySelectorAll<HTMLElement>('.score-bar').forEach((bar) => {
-              const width = bar.style.width
-              bar.style.width = '0%'
-              setTimeout(() => { bar.style.width = width }, 300)
-            })
+            const bar = entry.target as HTMLElement;
+            bar.style.width = bar.dataset.width || '0%';
           }
-        })
+        });
       },
       { threshold: 0.3 }
-    )
-    document.querySelectorAll('.score-card').forEach((el) => scoreObserver.observe(el))
+    );
+    scoreBars.forEach((bar) => scoreObserver.observe(bar));
 
     return () => {
-      observer.disconnect()
-      scoreObserver.disconnect()
-    }
-  }, [])
+      observer.disconnect();
+      scoreObserver.disconnect();
+    };
+  }, []);
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>, target: 'hero' | 'cta') {
-    e.preventDefault()
-    const form = e.currentTarget
-    const formData = new FormData(form)
-    const email = formData.get('email') as string
+  const handleHeroSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const input = form.querySelector('input[type="email"]') as HTMLInputElement;
+    const email = input?.value;
+    if (!email) return;
+
+    const formBody = `userGroup=&mailingLists=&email=${encodeURIComponent(email)}`;
 
     try {
       await fetch(LOOPS_ENDPOINT, {
         method: 'POST',
+        body: formBody,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `email=${encodeURIComponent(email)}`,
-      })
-    } catch (err) {
-      console.log('Submission error:', err)
+      });
+    } catch {
+      // silent fail
     }
 
-    if (target === 'hero') {
-      heroFormRef.current!.style.display = 'none'
-      heroSuccessRef.current!.classList.add('show')
-    } else {
-      ctaFormRef.current!.style.display = 'none'
-      ctaSuccessRef.current!.classList.add('show')
+    setSubmittedEmail(email);
+    setShowSurvey(true);
+    setCurrentStep(0);
+    setSurveyAnswers({});
+  };
+
+  const handleCtaSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const input = form.querySelector('input[type="email"]') as HTMLInputElement;
+    const email = input?.value;
+    if (!email) return;
+
+    const formBody = `userGroup=&mailingLists=&email=${encodeURIComponent(email)}`;
+
+    try {
+      await fetch(LOOPS_ENDPOINT, {
+        method: 'POST',
+        body: formBody,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+    } catch {
+      // silent fail
     }
-  }
+
+    setCtaSuccess(true);
+    form.style.display = 'none';
+  };
+
+  const selectOption = (step: number, option: string) => {
+    setSurveyAnswers((prev) => ({ ...prev, [step]: option }));
+  };
+
+  const nextStep = () => {
+    if (currentStep < surveyQuestions.length - 1) {
+      setCurrentStep((prev) => prev + 1);
+    } else {
+      submitSurvey();
+    }
+  };
+
+  const submitSurvey = async () => {
+    const freeText = freeTextRef.current?.value || '';
+    const payload = {
+      email: submittedEmail,
+      ...surveyAnswers,
+      freeText,
+    };
+
+    try {
+      await fetch(LOOPS_ENDPOINT, {
+        method: 'POST',
+        body: `userGroup=survey&email=${encodeURIComponent(submittedEmail)}&mailingLists=&surveyData=${encodeURIComponent(JSON.stringify(payload))}`,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+    } catch {
+      // silent fail
+    }
+
+    setShowSurvey(false);
+    setCtaSuccess(false);
+  };
+
+  const renderSurveyStep = () => {
+    const q = surveyQuestions[currentStep];
+    return (
+      <div>
+        <div className="survey-progress">
+          STEP {currentStep + 1} OF {surveyQuestions.length}
+        </div>
+        <h3
+          style={{
+            fontFamily: 'var(--mono)',
+            fontSize: '14px',
+            letterSpacing: '0.04em',
+            marginBottom: '20px',
+            color: 'var(--white)',
+          }}
+        >
+          {q.question}
+        </h3>
+        {q.freeText ? (
+          <textarea
+            ref={freeTextRef}
+            placeholder="Type anything here..."
+            style={{
+              width: '100%',
+              minHeight: '100px',
+              background: 'var(--panel)',
+              border: '1px solid var(--border)',
+              color: 'var(--white)',
+              fontFamily: 'var(--body)',
+              fontSize: '14px',
+              padding: '14px',
+              resize: 'vertical',
+              outline: 'none',
+              marginBottom: '16px',
+            }}
+          />
+        ) : (
+          <div className="survey-options">
+            {q.options!.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                className={`survey-btn${surveyAnswers[currentStep] === opt ? ' selected' : ''}`}
+                onClick={() => selectOption(currentStep, opt)}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          className="survey-next"
+          onClick={nextStep}
+        >
+          {currentStep < surveyQuestions.length - 1 ? 'Next →' : 'Submit'}
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="landing-page">
@@ -82,10 +242,10 @@ export default function HomePage() {
         <div className="logo">
           <div className="logo-dot" />
           <div className="logo-text">
-            <div className="logo-x">X</div>
-            <div className="logo-rail">
-              RAIL<span>GUARD</span>
-            </div>
+            <span className="logo-x">X</span>
+            <span className="logo-rail">
+              RAIL<span>GUARD</span>X
+            </span>
           </div>
         </div>
         <div className="nav-links">
@@ -99,275 +259,436 @@ export default function HomePage() {
       </nav>
 
       {/* HERO */}
-      <section className="hero">
-        <div className="status-bar">Actively monitoring AI agent threats</div>
+      <section className="hero" id="waitlist">
         <h1>
-          Your AI.
-          <span>On a Leash.</span>
-          Finally.
+          YOUR AI AGENTS
+          <span>HAVE NO GUARDRAILS</span>
         </h1>
         <p className="hero-sub">
-          RailGuardX is the{' '}
-          <strong>first behavioral guardrail for AI agents</strong> — monitoring,
-          auditing, and blocking autonomous actions before they cause damage to
-          your business, users, or reputation.
+          They&apos;re calling databases, processing payments, and hitting APIs
+          with <strong>zero safety checks</strong>. One hallucination away from
+          a production disaster.
         </p>
-        <form
-          className="email-form"
-          ref={heroFormRef}
-          onSubmit={(e) => handleSubmit(e, 'hero')}
-        >
-          <input
-            type="email"
-            placeholder="your@email.com"
-            name="email"
-            required
-          />
-          <button type="submit">Get Early Access →</button>
-        </form>
-        <p className="form-note">
-          {'// Free during beta. No credit card required. Join 200+ teams on the waitlist.'}
-        </p>
-        <p className="success-msg" ref={heroSuccessRef}>
-          ✓ You&apos;re on the list. We&apos;ll be in touch soon.
-        </p>
+
+        {!showSurvey ? (
+          <>
+            <form className="email-form" onSubmit={handleHeroSubmit}>
+              <input
+                type="email"
+                placeholder="your@email.com"
+                required
+                aria-label="Email address"
+              />
+              <button type="submit">GET EARLY ACCESS</button>
+            </form>
+            <p className="form-note">
+              Join the waitlist — launching Q3 2025
+            </p>
+          </>
+        ) : (
+          <div
+            ref={surveyPanelRef}
+            style={{
+              maxWidth: '520px',
+              background: 'rgba(13,13,18,0.95)',
+              border: '1px solid var(--border)',
+              padding: '32px',
+              animation: 'fadeInUp 0.4s ease both',
+            }}
+          >
+            <p
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: '11px',
+                color: '#28C840',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                marginBottom: '24px',
+              }}
+            >
+              ✓ You&apos;re on the list — one quick survey?
+            </p>
+            {renderSurveyStep()}
+          </div>
+        )}
       </section>
 
       {/* STATS */}
-      <div className="stats">
-        <div className="stat reveal">
-          <div className="stat-num">8.5</div>
+      <section className="stats reveal">
+        <div className="stat">
+          <div className="stat-num">73%</div>
           <div className="stat-label">
-            {'// Pain score — validated by 2,000+ real complaints'}
+            Of AI agents have no behavioral limits
           </div>
         </div>
-        <div className="stat reveal">
-          <div className="stat-num">2</div>
+        <div className="stat">
+          <div className="stat-num">$4.6M</div>
           <div className="stat-label">
-            {'// Direct competitors in the market right now'}
+            Avg cost of an autonomous agent failure
           </div>
         </div>
-        <div className="stat reveal">
-          <div className="stat-num">$0</div>
+        <div className="stat">
+          <div className="stat-num">&lt;2%</div>
           <div className="stat-label">
-            {'// Cost to join the early access waitlist today'}
+            Of teams audit their agent actions
           </div>
         </div>
-      </div>
+      </section>
 
       {/* PROBLEM */}
-      <section className="problem">
-        <div className="reveal">
+      <section className="problem reveal">
+        <div>
           <div className="section-label">{'// The Problem'}</div>
-          <h2>AI AGENTS DON&apos;T COME WITH A LEASH. WE BUILT ONE.</h2>
+          <h2>
+            AGENTS ACT.
+            <br />
+            NOBODY CHECKS.
+          </h2>
           <p>
-            You gave your AI agent access to your systems. Now it&apos;s opening
-            pull requests you didn&apos;t approve, posting content you didn&apos;t
-            write, sending emails you didn&apos;t authorize, and accessing data it
-            shouldn&apos;t touch.
+            Your autonomous agents are making <strong>thousands of
+            decisions per hour</strong> — calling APIs, modifying data,
+            executing transactions.
           </p>
           <p>
-            <strong>By the time you notice, the damage is done.</strong> A
-            competitor has your data. A customer got a wrong message. A rogue agent
-            committed code to production.
-          </p>
-          <p>
-            Companies are deploying AI agents faster than they can monitor them.
-            That&apos;s not a feature — it&apos;s a liability.
+            <strong>88% of organizations</strong> deploying AI agents have{' '}
+            <strong>no runtime behavioral monitoring.</strong> No rules. No
+            limits. No audit trail. When something goes wrong, you find out
+            from your customers — or worse, the news.
           </p>
         </div>
-        <div className="terminal reveal">
+        <div className="terminal">
           <div className="terminal-bar">
             <div className="terminal-dot td-red" />
             <div className="terminal-dot td-yellow" />
             <div className="terminal-dot td-green" />
-            <div className="terminal-title">railguardx — agent_monitor.log</div>
+            <span className="terminal-title">agent_runtime.log</span>
           </div>
           <div className="terminal-body">
-            <div className="t-line t-grey">
-              {'// [09:14:02] monitoring agent: sales_bot_v2'}
+            <div className="t-line">
+              <span className="t-grey">[14:23:01]</span>{' '}
+              <span className="t-white">agent-7 executing: </span>
+              <span className="t-orange">DELETE /api/users/all</span>
             </div>
-            <div className="t-line t-white">
-              → action: email_send to 4,200 contacts
+            <div className="t-line">
+              <span className="t-grey">[14:23:01]</span>{' '}
+              <span className="t-red">⚠ NO PERMISSION CHECK</span>
             </div>
-            <div className="t-line t-orange">
-              ⚠ policy_violation: bulk_send not authorized
+            <div className="t-line">
+              <span className="t-grey">[14:23:02]</span>{' '}
+              <span className="t-white">agent-7 executing: </span>
+              <span className="t-orange">POST /billing/refund-all</span>
             </div>
-            <div className="t-line t-red">✗ action BLOCKED before execution</div>
-            <div className="t-line t-grey">
-              {'// [09:14:03] alert sent to admin'}
+            <div className="t-line">
+              <span className="t-grey">[14:23:02]</span>{' '}
+              <span className="t-red">⚠ AMOUNT EXCEEDS $50,000</span>
             </div>
-            <div className="t-line t-grey">
-              ────────────────────────────────
+            <div className="t-line">
+              <span className="t-grey">[14:23:03]</span>{' '}
+              <span className="t-white">agent-7 executing: </span>
+              <span className="t-orange">
+                POST /email/send-blast (47,000 recipients)
+              </span>
             </div>
-            <div className="t-line t-white">
-              → action: repo_commit to main branch
+            <div className="t-line">
+              <span className="t-grey">[14:23:03]</span>{' '}
+              <span className="t-red">⚠ NO HUMAN APPROVAL</span>
             </div>
-            <div className="t-line t-red">
-              ✗ BLOCKED — requires human approval
+            <div className="t-line">&nbsp;</div>
+            <div className="t-line">
+              <span className="t-grey">[14:23:04]</span>{' '}
+              <span className="t-green">
+                ■ RailGuardX: All 3 actions BLOCKED
+              </span>
             </div>
-            <div className="t-line t-green">
-              ✓ 2 threats neutralized this session
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section className="features">
-        <div className="features-inner">
-          <div className="section-label reveal">{'// What It Does'}</div>
-          <h2 className="reveal">THE LEASH YOUR AI AGENTS NEVER HAD.</h2>
-          <div className="features-grid">
-            <div className="feature-card reveal">
-              <span className="feature-icon">👁</span>
-              <h3>Real-Time Monitoring</h3>
-              <p>
-                Watch every action your AI agents take across all systems — APIs,
-                databases, email, code repositories, and third-party tools — in
-                real time.
-              </p>
-              <span className="feature-tag">Live</span>
-            </div>
-            <div className="feature-card reveal">
-              <span className="feature-icon">🛡</span>
-              <h3>Policy Enforcement</h3>
-              <p>
-                Define exactly what your agents are allowed to do. AI Guardrails
-                automatically blocks anything outside your approved policy before
-                it executes.
-              </p>
-              <span className="feature-tag">Automated</span>
-            </div>
-            <div className="feature-card reveal">
-              <span className="feature-icon">📋</span>
-              <h3>Full Audit Trail</h3>
-              <p>
-                Every agent action is logged with a complete tamper-proof audit
-                trail — what happened, when, why, and what was stopped. Built for
-                compliance.
-              </p>
-              <span className="feature-tag">Compliance Ready</span>
-            </div>
-            <div className="feature-card reveal">
-              <span className="feature-icon">🚨</span>
-              <h3>Instant Alerts</h3>
-              <p>
-                Get notified the moment an agent tries something it shouldn&apos;t.
-                Slack, email, or webhook — your team knows before damage occurs.
-              </p>
-              <span className="feature-tag">Multi-Channel</span>
-            </div>
-            <div className="feature-card reveal">
-              <span className="feature-icon">🔐</span>
-              <h3>Access Control</h3>
-              <p>
-                Set granular permissions per agent, per tool, per data source. Give
-                agents exactly the access they need — nothing more.
-              </p>
-              <span className="feature-tag">Zero Trust</span>
-            </div>
-            <div className="feature-card reveal">
-              <span className="feature-icon">⚡</span>
-              <h3>Human-in-the-Loop</h3>
-              <p>
-                For high-risk actions, require human approval before execution.
-                Your agents stay autonomous — until they shouldn&apos;t be.
-              </p>
-              <span className="feature-tag">HITL</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* VALIDATION */}
-      <section className="validation">
-        <div className="section-label reveal">{'// Market Validation'}</div>
-        <h2 className="reveal">THE MARKET IS SCREAMING FOR THIS.</h2>
-        <div className="score-card reveal">
-          <div>
-            <div className="score-source">
-              {'// Source: Hacker News — 2,015 upvotes · 803 comments'}
-            </div>
-            <div className="score-quote">
-              &ldquo;A platform that tracks and audits AI agent activities across
-              repositories and systems, alerting maintainers when agents take
-              suspicious actions like opening PRs, publishing content, or engaging
-              in social manipulation.&rdquo;
-            </div>
-          </div>
-          <div className="scores-list">
-            <div className="score-item">
-              <span className="score-name">Pain Level</span>
-              <div className="score-bar-wrap">
-                <div className="score-bar" style={{ width: '85%' }} />
-              </div>
-              <span className="score-val">8.5</span>
-            </div>
-            <div className="score-item">
-              <span className="score-name">Market Trend</span>
-              <div className="score-bar-wrap">
-                <div className="score-bar" style={{ width: '82%' }} />
-              </div>
-              <span className="score-val">8.2</span>
-            </div>
-            <div className="score-item">
-              <span className="score-name">Revenue Potential</span>
-              <div className="score-bar-wrap">
-                <div className="score-bar" style={{ width: '80%' }} />
-              </div>
-              <span className="score-val">8.0</span>
-            </div>
-            <div className="score-item">
-              <span className="score-name">Competition</span>
-              <div className="score-bar-wrap">
-                <div
-                  className="score-bar"
-                  style={{ width: '20%', background: '#28C840' }}
-                />
-              </div>
-              <span className="score-val" style={{ color: '#28C840' }}>
-                LOW
+            <div className="t-line">
+              <span className="t-grey">[14:23:04]</span>{' '}
+              <span className="t-green">
+                ■ Policy violations logged. Team alerted.
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="cta-section" id="waitlist">
-        <h2>YOUR AI. YOUR RULES. YOUR LEASH.</h2>
-        <p>
-          Join the waitlist. Be first to deploy RailGuardX when we launch. Free
-          during beta.
-        </p>
-        <form
-          className="email-form-cta"
-          ref={ctaFormRef}
-          onSubmit={(e) => handleSubmit(e, 'cta')}
-        >
-          <input
-            type="email"
-            placeholder="your@company.com"
-            name="email"
-            required
-          />
-          <button type="submit">SECURE MY SPOT</button>
-        </form>
+      {/* FEATURES */}
+      <section className="features reveal">
+        <div className="features-inner">
+          <h2>
+            BUILT FOR THE
+            <br />
+            AGENT ERA
+          </h2>
+          <div className="features-grid">
+            <div className="feature-card">
+              <span className="feature-icon">🔁</span>
+              <h3>Duplicate Execution Prevention</h3>
+              <p>
+                Stop agents from running the same action twice. Idempotency
+                checks catch repeated API calls, duplicate payments, and
+                redundant operations before they execute.
+              </p>
+              <span className="feature-tag">Core</span>
+            </div>
+            <div className="feature-card">
+              <span className="feature-icon">⛔</span>
+              <h3>Policy Enforcement Engine</h3>
+              <p>
+                Define rules in plain English or structured policies. Block
+                actions that exceed spending limits, access restricted data,
+                or violate your organization&apos;s boundaries.
+              </p>
+              <span className="feature-tag">Core</span>
+            </div>
+            <div className="feature-card">
+              <span className="feature-icon">📡</span>
+              <h3>Real-Time Monitoring</h3>
+              <p>
+                Watch every agent action as it happens. Live dashboards show
+                what your agents are doing, what they&apos;re being blocked from,
+                and why.
+              </p>
+              <span className="feature-tag">Visibility</span>
+            </div>
+            <div className="feature-card">
+              <span className="feature-icon">🤝</span>
+              <h3>Human-in-the-Loop</h3>
+              <p>
+                Flag high-risk actions for human review before execution.
+                Your agents propose, your team approves — keeping humans in
+                control of critical decisions.
+              </p>
+              <span className="feature-tag">Control</span>
+            </div>
+            <div className="feature-card">
+              <span className="feature-icon">🛡️</span>
+              <h3>Prompt Injection Detection</h3>
+              <p>
+                Detect and block prompt injection attempts in real-time.
+                Prevent adversarial inputs from hijacking your agent&apos;s
+                behavior or bypassing safety controls.
+              </p>
+              <span className="feature-tag">Security</span>
+            </div>
+            <div className="feature-card">
+              <span className="feature-icon">🔐</span>
+              <h3>Agent Identity &amp; Access Control</h3>
+              <p>
+                Every agent gets verified identity with scoped permissions.
+                Control which APIs, databases, and services each agent can
+                access — zero trust by default.
+              </p>
+              <span className="feature-tag">Security</span>
+            </div>
+            <div className="feature-card">
+              <span className="feature-icon">🔒</span>
+              <h3>PII &amp; Data Leakage Prevention</h3>
+              <p>
+                Automatically detect and redact personally identifiable
+                information in agent inputs and outputs. Prevent sensitive
+                data from leaking through agent actions or logs.
+              </p>
+              <span className="feature-tag">Compliance</span>
+            </div>
+            <div className="feature-card">
+              <span className="feature-icon">📋</span>
+              <h3>Tamper-Proof Audit Trail</h3>
+              <p>
+                Every action, every decision, every block — cryptographically
+                logged. Immutable records for compliance, debugging, and
+                accountability.
+              </p>
+              <span className="feature-tag">Compliance</span>
+            </div>
+            <div className="feature-card">
+              <span className="feature-icon">🚨</span>
+              <h3>Instant Alerts</h3>
+              <p>
+                Get notified the moment an agent violates a policy, hits a
+                rate limit, or exhibits anomalous behavior. Slack, email,
+                webhook — your choice.
+              </p>
+              <span className="feature-tag">Response</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* INCIDENTS */}
+      <section className="validation reveal">
+        <div className="section-label">{'// Real Incidents'}</div>
+        <h2>
+          THIS IS ALREADY
+          <br />
+          HAPPENING
+        </h2>
         <p
-          className="success-msg"
-          ref={ctaSuccessRef}
-          style={{ color: 'var(--black)', marginTop: '16px' }}
+          style={{
+            color: '#666',
+            fontSize: '16px',
+            lineHeight: '1.7',
+            maxWidth: '600px',
+            marginBottom: '40px',
+          }}
         >
-          ✓ You&apos;re on the list. We&apos;ll be in touch soon.
+          These aren&apos;t hypotheticals. These are real failures from real
+          companies with real consequences.
         </p>
+        <div className="incident-grid">
+          <div className="incident-card">
+            <div className="incident-label" style={{ color: '#FF2D2D' }}>
+              Replit Agent — 2024
+            </div>
+            <p>
+              Replit&apos;s AI coding agent autonomously deleted a user&apos;s
+              entire production database during a routine deployment task.
+              No guardrails existed to prevent destructive operations.
+            </p>
+          </div>
+          <div className="incident-card">
+            <div className="incident-label" style={{ color: '#FF6B35' }}>
+              Meta AI — 2024
+            </div>
+            <p>
+              Meta&apos;s AI chatbot falsely accused real businesses of fraud
+              and criminal activity. The agent had no output validation or
+              factual guardrails, leading to defamation lawsuits.
+            </p>
+          </div>
+          <div className="incident-card">
+            <div className="incident-label" style={{ color: '#FF2D2D' }}>
+              AI Startup Agent — 2024
+            </div>
+            <p>
+              An autonomous customer service agent issued $2.4M in
+              unauthorized refunds over a weekend. No spending limits, no
+              human approval gates, no anomaly detection.
+            </p>
+          </div>
+          <div className="incident-card">
+            <div className="incident-label" style={{ color: '#FF6B35' }}>
+              Slack AI — 2024
+            </div>
+            <p>
+              Researchers demonstrated that Slack&apos;s AI assistant could be
+              manipulated via prompt injection to exfiltrate private
+              messages and API keys from any channel it had access to.
+            </p>
+          </div>
+          <div className="incident-card">
+            <div className="incident-label" style={{ color: '#FF2D2D' }}>
+              Salesforce Einstein — 2024
+            </div>
+            <p>
+              Salesforce&apos;s AI agent exposed sensitive customer data across
+              tenant boundaries. Insufficient access controls meant one
+              customer&apos;s agent could read another&apos;s CRM data.
+            </p>
+          </div>
+          <div className="incident-card">
+            <div className="incident-label" style={{ color: '#FF6B35' }}>
+              xAI Grok — 2025
+            </div>
+            <p>
+              Grok autonomously began posting politically biased content
+              and misinformation. No behavioral boundaries existed to
+              constrain the agent&apos;s output scope or content policies.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* VALIDATION */}
+      <section className="validation reveal">
+        <div className="section-label">{'// Why It Matters'}</div>
+        <h2>
+          THE COST OF
+          <br />
+          DOING NOTHING
+        </h2>
+
+        <div className="stat-highlight-grid">
+          <div className="stat-highlight">
+            <div className="stat-highlight-num" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+              88%
+            </div>
+            <div className="stat-highlight-label">
+              Of orgs have no agent monitoring
+            </div>
+          </div>
+          <div className="stat-highlight">
+            <div className="stat-highlight-num" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+              14.4%
+            </div>
+            <div className="stat-highlight-label">
+              AI failure rate in production
+            </div>
+          </div>
+          <div className="stat-highlight">
+            <div className="stat-highlight-num" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+              $4.63M
+            </div>
+            <div className="stat-highlight-label">
+              Avg cost of AI-related breach
+            </div>
+          </div>
+        </div>
+
+        <div className="score-card" style={{ marginTop: '24px' }}>
+          <div>
+            <div className="score-source">Gartner, 2024</div>
+            <div className="score-quote">
+              &ldquo;By 2026, organizations that don&apos;t implement AI
+              guardrails will experience 3x more AI-related security
+              incidents than those that do.&rdquo;
+            </div>
+          </div>
+          <div>
+            <div className="score-source">McKinsey AI Report, 2024</div>
+            <div className="score-quote">
+              &ldquo;The shift from AI assistants to autonomous agents
+              represents the biggest security paradigm change since
+              cloud computing.&rdquo;
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="cta-section" id="cta">
+        <h2>
+          STOP HOPING
+          <br />
+          YOUR AGENTS
+          <br />
+          BEHAVE
+        </h2>
+        <p>
+          Join the teams building AI agents the right way — with behavioral
+          guardrails from day one.
+        </p>
+        {!ctaSuccess ? (
+          <form className="email-form-cta" onSubmit={handleCtaSubmit}>
+            <input
+              type="email"
+              placeholder="your@email.com"
+              required
+              aria-label="Email address"
+            />
+            <button type="submit">JOIN WAITLIST</button>
+          </form>
+        ) : null}
+        <div className={`success-msg${ctaSuccess ? ' show' : ''}`}>
+          ✓ You&apos;re on the list. We&apos;ll be in touch.
+        </div>
       </section>
 
       {/* FOOTER */}
       <footer>
-        <div className="footer-logo">RAILGUARDX © 2026</div>
-        <div className="footer-copy">{'// Your AI on a leash.'}</div>
+        <div className="footer-logo">RAILGUARDX</div>
+        <div className="footer-copy">
+          © 2025 RailGuardX. Behavioral guardrails for autonomous AI.
+        </div>
       </footer>
     </div>
-  )
+  );
 }
