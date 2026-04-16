@@ -28,13 +28,6 @@ const surveyQuestions = [
   },
   {
     question: 'How much would you pay for a powerful tool like this monthly?',
-    options: [
-      'I wouldn\'t pay — it should be free',
-      '$29–$99/mo',
-      '$100–$499/mo',
-      '$500–$999/mo',
-      '$1,000+/mo if it actually solves the problem',
-    ],
     freeText: true,
     placeholder: 'What would make it worth that price to you?',
   },
