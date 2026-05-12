@@ -1,8 +1,0 @@
-{
-  "/api/org/route": "app/api/org/route.js",
-  "/api/projects/route": "app/api/projects/route.js",
-  "/api/policies/route": "app/api/policies/route.js",
-  "/page": "app/page.js",
-  "/(dashboard)/policies/page": "app/(dashboard)/policies/page.js",
-  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js"
-}
