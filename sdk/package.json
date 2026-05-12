@@ -1,0 +1,17 @@
+{
+  "name": "railguardx",
+  "version": "0.1.0",
+  "description": "Add AI safety guardrails to any LLM app in 5 lines of code",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["ai", "guardrails", "llm", "safety", "compliance"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
